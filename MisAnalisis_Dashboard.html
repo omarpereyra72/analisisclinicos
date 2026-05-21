@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Análisis — Dashboard Clínico Personal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#d94f72;--rose-light:#fbeaf0;--rose-mid:#e8738f;--rose-dark:#a8385a;
+  --teal:#1a9e78;--teal-light:#e3f5ef;--teal-mid:#4dc4a0;
+  --blue:#2f7fc4;--blue-light:#e8f2fb;--blue-mid:#64a8e0;
+  --amber:#c47a15;--amber-light:#fdf0d8;
+  --purple:#5a4ab0;--purple-light:#eeecfd;
+  --coral:#c94d28;--coral-light:#faeae4;
+  --gray:#f7f6f3;--gray2:#eeede9;--gray3:#d6d4cd;--gray4:#9e9b93;--gray5:#5a5853;
+  --white:#ffffff;--black:#1a1917;
+  --radius:10px;--radius-lg:14px;--radius-xl:20px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --shadow-md:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.06);
+  --font-display:'DM Serif Display',serif;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--gray);color:var(--black);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--white);border-right:1px solid var(--gray3);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
+.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* SIDEBAR */
+.sidebar-logo{padding:24px 20px 16px;border-bottom:1px solid var(--gray2)}
+.logo-row{display:flex;align-items:center;gap:12px}
+.logo-drop{width:38px;height:46px;flex-shrink:0}
+.logo-drop svg{width:38px;height:46px}
+.logo-text{font-family:var(--font-display);font-size:17px;color:var(--black);line-height:1.2}
+.logo-sub{font-size:11px;color:var(--gray4);margin-top:2px;font-weight:300}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--gray4);padding:8px 20px 4px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:var(--gray5);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--gray);color:var(--black)}
+.nav-item.active{background:var(--rose-light);color:var(--rose-dark);border-left-color:var(--rose);font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--gray2)}
+.patient-chip{background:var(--gray);border-radius:var(--radius);padding:10px 12px}
+.patient-name{font-size:12px;font-weight:500;color:var(--black)}
+.patient-info{font-size:11px;color:var(--gray4);margin-top:1px}
+
+/* TOPBAR */
+.topbar{background:var(--white);border-bottom:1px solid var(--gray2);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:var(--font-display);font-size:20px;color:var(--black)}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-rose{background:var(--rose-light);color:var(--rose-dark)}
+.badge-teal{background:var(--teal-light);color:#0d6649}
+.badge-amber{background:var(--amber-light);color:#7a4a0a}
+.badge-blue{background:var(--blue-light);color:#1a4f80}
+.badge-gray{background:var(--gray2);color:var(--gray5)}
+.badge-coral{background:var(--coral-light);color:var(--coral)}
+
+/* CONTENT */
+.content{padding:24px 28px;flex:1}
+.section{display:none}
+.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--gray2);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:14px;font-weight:600;color:var(--black);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title svg{width:16px;height:16px;color:var(--rose);flex-shrink:0}
+.card-title .sub{font-size:12px;font-weight:400;color:var(--gray4);margin-left:4px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid-full{grid-column:1/-1}
+
+/* METRIC CARDS */
+.metric{background:var(--gray);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--gray2)}
+.metric-label{font-size:11px;color:var(--gray4);margin-bottom:6px;font-weight:500;letter-spacing:.03em;text-transform:uppercase}
+.metric-val{font-size:22px;font-weight:600;color:var(--black);line-height:1}
+.metric-unit{font-size:11px;font-weight:400;color:var(--gray4);margin-top:4px}
+.metric-trend{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:3px}
+.trend-up{color:#c94d28}.trend-down{color:#1a9e78}.trend-ok{color:#1a9e78}
+.metric.ok{border-left:3px solid var(--teal)}
+.metric.warn{border-left:3px solid var(--amber)}
+.metric.bad{border-left:3px solid var(--rose)}
+.metric.ok .metric-val{color:#0d6649}
+.metric.warn .metric-val{color:#7a4a0a}
+.metric.bad .metric-val{color:var(--rose-dark)}
+
+/* STATUS TAGS */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;white-space:nowrap}
+.tag-ok{background:var(--teal-light);color:#0d6649}
+.tag-warn{background:var(--amber-light);color:#7a4a0a}
+.tag-bad{background:var(--rose-light);color:var(--rose-dark)}
+.tag-gray{background:var(--gray2);color:var(--gray5)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--gray3);background:var(--white);font-size:13px;font-family:var(--font-body);color:var(--black);cursor:pointer;transition:all .15s;font-weight:400}
+.btn:hover{background:var(--gray);border-color:var(--gray4)}
+.btn-primary{background:var(--rose);color:#fff;border-color:var(--rose);font-weight:500}
+.btn-primary:hover{background:var(--rose-dark);border-color:var(--rose-dark)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-icon{padding:7px;border-radius:var(--radius)}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-teal:hover{background:#0d6649}
+
+/* FORMS */
+label{font-size:12px;font-weight:500;color:var(--gray5);display:block;margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
+  width:100%;border:1px solid var(--gray3);border-radius:var(--radius);padding:9px 11px;font-size:13px;
+  font-family:var(--font-body);color:var(--black);background:var(--white);transition:border .15s;outline:none
+}
+input:focus,select:focus,textarea:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(217,79,114,.08)}
+textarea{resize:vertical;min-height:72px;line-height:1.5}
+.form-group{margin-bottom:10px}
+.form-inline{display:flex;gap:10px;flex-wrap:wrap}
+.form-inline .form-group{flex:1;min-width:140px}
+.form-panel{background:var(--gray);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;border:1px solid var(--gray2)}
+.form-panel-title{font-size:13px;font-weight:600;color:var(--black);margin-bottom:12px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--gray2)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+thead{background:var(--gray)}
+th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--gray2);font-size:11px;font-weight:600;color:var(--gray4);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--gray2);color:var(--black);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray)}
+.col-num{text-align:right}
+
+/* CHARTS */
+.chart-wrap{position:relative;width:100%}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-bar input,.filter-bar select{width:auto;padding:7px 10px;font-size:12px}
+
+/* ALERT ITEM */
+.alert-item{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-radius:var(--radius);margin-bottom:8px;font-size:13px}
+.alert-ok{background:var(--teal-light);border-left:3px solid var(--teal)}
+.alert-warn{background:var(--amber-light);border-left:3px solid var(--amber)}
+.alert-bad{background:var(--rose-light);border-left:3px solid var(--rose)}
+.alert-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.dot-ok{background:var(--teal)}.dot-warn{background:var(--amber)}.dot-bad{background:var(--rose)}
+.alert-text strong{font-weight:600}
+
+/* INTERPRETATION */
+.interp-block{border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.interp-ok{background:var(--teal-light);border-left:3px solid var(--teal);color:#0d4d35}
+.interp-warn{background:var(--amber-light);border-left:3px solid var(--amber);color:#5a3408}
+.interp-bad{background:var(--rose-light);border-left:3px solid var(--rose);color:#7a1f3a}
+.suggest-block{background:var(--blue-light);border-left:3px solid var(--blue);border-radius:var(--radius);padding:14px 16px;font-size:13px;line-height:1.7;color:#0e2e4e}
+.suggest-block ul{padding-left:18px;margin-top:6px}
+.suggest-block li{margin-bottom:4px}
+
+/* GLOSARIO */
+.glos-entry{padding:14px 0;border-bottom:1px solid var(--gray2)}
+.glos-entry:last-child{border-bottom:none}
+.glos-term{font-weight:600;font-size:14px;color:var(--black)}
+.glos-cat{font-size:11px;font-weight:500;color:var(--gray4);background:var(--gray2);padding:2px 8px;border-radius:99px;margin-left:8px}
+.glos-def{font-size:13px;color:var(--gray5);margin-top:5px;line-height:1.6}
+
+/* LINK CARD */
+.link-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--gray2)}
+.link-item:last-child{border-bottom:none}
+.link-icon{width:38px;height:38px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.link-body{flex:1}
+.link-title{font-size:13px;font-weight:500;color:var(--black)}
+.link-url{font-size:11px;color:var(--gray4);margin-top:2px}
+
+/* MED ITEM */
+.med-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gray2)}
+.med-item:last-child{border-bottom:none}
+.med-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--purple-light);color:#2e2070;border-radius:99px;font-size:12px;font-weight:500}
+.med-info{flex:1;font-size:12px;color:var(--gray5)}
+.med-dates{font-size:11px;color:var(--gray4);white-space:nowrap}
+
+/* SECTION HEADER */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-family:var(--font-display);font-size:22px;color:var(--black)}
+.sec-actions{display:flex;gap:8px}
+
+/* RADAR LEGEND */
+.radar-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:12px;color:var(--gray5)}
+.radar-legend span{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+
+/* REPORTE */
+.rep-title{font-family:var(--font-display);font-size:18px;margin-bottom:8px;color:var(--black)}
+.rep-meta{font-size:12px;color:var(--gray4);margin-bottom:16px}
+.rep-section{margin-bottom:20px}
+.delta-up{color:var(--rose-dark)}.delta-down{color:var(--teal)}.delta-eq{color:var(--gray4)}
+
+/* PRINT */
+@media print{
+  .sidebar,.topbar,.no-print{display:none!important}
+  .main{margin-left:0!important}
+  .content{padding:12px!important}
+  body{background:white!important}
+  .card{box-shadow:none!important;border:1px solid #ccc!important;break-inside:avoid}
+  .section{display:none!important}
+  .section.active{display:block!important}
+  .form-panel{display:none!important}
+  .filter-bar{display:none!important}
+  .sec-header{display:none!important}
+  .card-title svg{display:none!important}
+  #print-header{display:block!important}
+  #print-content{display:none!important}
+  .tag-ok{background:#d4edda!important;color:#155724!important}
+  .tag-warn{background:#fff3cd!important;color:#856404!important}
+  .tag-bad{background:#f8d7da!important;color:#721c24!important}
+  table{border-collapse:collapse!important}
+  th,td{border:1px solid #ccc!important;padding:6px 10px!important;font-size:12px!important}
+  .delta-up{color:#c0392b!important}.delta-down{color:#1a7a5e!important}
+}
+#print-content{display:none}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--gray)}
+::-webkit-scrollbar-thumb{background:var(--gray3);border-radius:99px}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--gray2);margin:14px 0}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:30px 20px;color:var(--gray4);font-size:13px}
+
+/* LIPID LEGEND */
+.chart-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:var(--gray5)}
+.chart-legend span{display:flex;align-items:center;gap:5px}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+
+/* TOOLTIP */
+.tooltip-val{font-size:11px;background:rgba(26,25,23,.85);color:#fff;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{width:64px}.main{margin-left:64px}
+  .logo-text,.logo-sub,.nav-label,.nav-item span,.patient-chip{display:none}
+  .nav-item{padding:12px;justify-content:center}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .content{padding:16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-row">
+      <div class="logo-drop">
+        <svg viewBox="0 0 38 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 2 C19 2, 4 18, 4 28 A15 15 0 0 0 34 28 C34 18, 19 2, 19 2Z" fill="#d94f72"/>
+          <circle cx="13" cy="27" r="2.8" fill="white" opacity="0.35"/>
+          <ellipse cx="19" cy="32" rx="5.5" ry="2.2" fill="#fff" opacity="0.15"/>
+          <circle cx="14.5" cy="33" r="1.4" fill="#fff" opacity="0.75"/>
+          <circle cx="23.5" cy="33" r="1.4" fill="#fff" opacity="0.75"/>
+          <path d="M16.5 36 Q19 38.5 21.5 36" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.9"/>
+          <path d="M12.5 30.5 Q14 29 15.5 30.5" stroke="#fff" stroke-width=".9" stroke-linecap="round" fill="none" opacity="0.6"/>
+          <path d="M22.5 30.5 Q24 29 25.5 30.5" stroke="#fff" stroke-width=".9" stroke-linecap="round" fill="none" opacity="0.6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">Mis Análisis</div>
+        <div class="logo-sub">Dashboard clínico</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-label">Principal</div>
+    <button class="nav-item active" onclick="showSection('resumen',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Resumen</span>
+    </button>
+    <button class="nav-item" onclick="showSection('historial',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Historial</span>
+    </button>
+    <button class="nav-item" onclick="showSection('graficos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Gráficos</span>
+    </button>
+    <div class="nav-label">Gestión</div>
+    <button class="nav-item" onclick="showSection('medicamentos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.5 20H4a2 2 0 01-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 011.66.9l.82 1.2a2 2 0 001.66.9H20a2 2 0 012 2v3"/><path d="M15 18a3 3 0 106 0 3 3 0 00-6 0zM18 15v6M15 18h6"/></svg>
+      <span>Medicamentos</span>
+    </button>
+    <button class="nav-item" onclick="showSection('interpretacion',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v3m0 0v3m0-3h3m-3 0H8"/></svg>
+      <span>Interpretación</span>
+    </button>
+    <div class="nav-label">Recursos</div>
+    <button class="nav-item" onclick="showSection('recursos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <span>Recursos</span>
+    </button>
+    <button class="nav-item" onclick="showSection('glosario',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <span>Glosario</span>
+    </button>
+    <button class="nav-item" onclick="showSection('reportes',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Reportes</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="patient-chip">
+      <div class="patient-name">Pereyra, Omar</div>
+      <div class="patient-info">09/05/1972 · HC 1102632</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Resumen</div>
+    <div class="topbar-actions">
+      <button class="btn btn-sm no-print" onclick="exportData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </button>
+      <label class="btn btn-sm no-print" style="cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar
+        <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+      </label>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════ RESUMEN ══════ -->
+    <div id="sec-resumen" class="section active">
+      <div id="kpi-grid" class="grid-4" style="margin-bottom:16px"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            Hemoglobina <span class="sub">g/dl · referencia 13.5–17.5</span>
+          </div>
+          <div class="chart-wrap" style="height:190px"><canvas id="hbChart" role="img" aria-label="Evolución hemoglobina"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="6"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+            Creatinina <span class="sub">mg/dl · ref ≤1.20</span>
+          </div>
+          <div class="chart-wrap" style="height:190px"><canvas id="creatChart" role="img" aria-label="Evolución creatinina"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Leucocitos <span class="sub">k/ul · ref 4–10</span>
+          </div>
+          <div class="chart-wrap" style="height:190px"><canvas id="leucChart" role="img" aria-label="Evolución leucocitos"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+            Perfil lipídico <span class="sub">último análisis</span>
+          </div>
+          <div class="chart-legend">
+            <span><span class="leg-sq" style="background:#2f7fc4"></span>Col T.</span>
+            <span><span class="leg-sq" style="background:#1a9e78"></span>HDL</span>
+            <span><span class="leg-sq" style="background:#d94f72"></span>LDL</span>
+            <span><span class="leg-sq" style="background:#c47a15"></span>TG</span>
+          </div>
+          <div class="chart-wrap" style="height:155px"><canvas id="lipidChart" role="img" aria-label="Perfil lipídico último análisis"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Alertas — último análisis (20/05/2026)
+        </div>
+        <div id="alerts-container"></div>
+      </div>
+    </div>
+
+    <!-- ══════ HISTORIAL ══════ -->
+    <div id="sec-historial" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Historial de análisis</div>
+        <div class="sec-actions">
+          <button class="btn btn-primary btn-sm" onclick="toggleForm('add-form')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo análisis
+          </button>
+        </div>
+      </div>
+
+      <div id="add-form" style="display:none" class="form-panel">
+        <div class="form-panel-title">Agregar análisis clínico</div>
+        <div class="form-inline">
+          <div class="form-group"><label>Fecha</label><input type="date" id="f-fecha"></div>
+          <div class="form-group" style="flex:2"><label>Médico solicitante</label><input type="text" id="f-medico" placeholder="Ej: Dr. Chiurchiu"></div>
+          <div class="form-group" style="flex:2"><label>Especialidad</label><input type="text" id="f-esp" placeholder="Ej: Nefrología"></div>
+        </div>
+        <div class="form-inline">
+          <div class="form-group" style="flex:2"><label>Diagnóstico / motivo</label><input type="text" id="f-diag" placeholder="Ej: Control hematuria, nefropatía IgA"></div>
+          <div class="form-group" style="flex:2"><label>Notas</label><input type="text" id="f-notas" placeholder="Observaciones adicionales"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="form-panel-title" style="font-size:12px;color:var(--gray4)">Valores del análisis</div>
+        <div class="form-inline">
+          <div class="form-group"><label>Hemoglobina (g/dl)</label><input type="number" step="0.1" id="v-hb"></div>
+          <div class="form-group"><label>Creatinina (mg/dl)</label><input type="number" step="0.01" id="v-cr"></div>
+          <div class="form-group"><label>Leucocitos (k/ul)</label><input type="number" step="0.01" id="v-leu"></div>
+          <div class="form-group"><label>Col. Total (mg/dl)</label><input type="number" id="v-ct"></div>
+        </div>
+        <div class="form-inline">
+          <div class="form-group"><label>HDL (mg/dl)</label><input type="number" id="v-hdl"></div>
+          <div class="form-group"><label>LDL (mg/dl)</label><input type="number" id="v-ldl"></div>
+          <div class="form-group"><label>Triglicéridos (mg/dl)</label><input type="number" id="v-tg"></div>
+          <div class="form-group"><label>Glucosa (mg/dl)</label><input type="number" id="v-gl"></div>
+          <div class="form-group"><label>Ferritina (ng/ml)</label><input type="number" id="v-fer"></div>
+          <div class="form-group"><label>Urea (mg/dl)</label><input type="number" id="v-urea"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" onclick="addAnalysis()">Guardar análisis</button>
+          <button class="btn btn-sm" onclick="toggleForm('add-form')">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="f-search" placeholder="Buscar por médico, diagnóstico..." style="min-width:220px" oninput="renderTable()">
+        <select id="f-year" onchange="renderTable()">
+          <option value="">Todos los años</option>
+          <option>2024</option><option>2025</option><option>2026</option>
+        </select>
+        <select id="f-spec" onchange="renderTable()">
+          <option value="">Todas las especialidades</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Fecha</th><th>Médico</th><th>Especialidad</th><th>Diagnóstico</th>
+              <th class="col-num">Hb</th><th class="col-num">Creat.</th><th class="col-num">Leuco.</th><th class="col-num">Col T.</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ GRÁFICOS ══════ -->
+    <div id="sec-graficos" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Gráficos clínicos</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            Serie hematológica
+          </div>
+          <div class="chart-legend">
+            <span><span class="leg-sq" style="background:#d94f72"></span>Hemoglobina (g/dl)</span>
+            <span><span class="leg-sq" style="background:#5a4ab0;opacity:.7"></span>Leucocitos (k/ul)</span>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="hemaChart" role="img" aria-label="Serie hematológica"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="6"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20"/></svg>
+            Función renal
+          </div>
+          <div class="chart-legend">
+            <span><span class="leg-sq" style="background:#2f7fc4"></span>Creatinina (mg/dl)</span>
+            <span><span class="leg-sq" style="background:#c47a15;opacity:.7"></span>Urea (mg/dl ÷10)</span>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="renalChart" role="img" aria-label="Función renal"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Perfil lipídico completo
+          </div>
+          <div class="chart-legend">
+            <span><span class="leg-sq" style="background:#2f7fc4"></span>Col Total</span>
+            <span><span class="leg-sq" style="background:#1a9e78"></span>HDL</span>
+            <span><span class="leg-sq" style="background:#d94f72"></span>LDL</span>
+            <span><span class="leg-sq" style="background:#c47a15"></span>Triglicéridos</span>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="lipidFullChart" role="img" aria-label="Perfil lipídico evolución"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            Ferritina <span class="sub">ng/ml · ref masculino 15–250</span>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="ferChart" role="img" aria-label="Evolución ferritina"></canvas></div>
+        </div>
+        <div class="card grid-full">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Estado por sistema — mapa radar último análisis
+          </div>
+          <div class="chart-legend">
+            <span><span class="leg-dot" style="background:#d94f72"></span>Estado actual (0=óptimo, 100=alterado)</span>
+          </div>
+          <div class="chart-wrap" style="height:280px"><canvas id="radarChart" role="img" aria-label="Radar estado por sistema"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ MEDICAMENTOS ══════ -->
+    <div id="sec-medicamentos" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Medicamentos</div>
+        <button class="btn btn-primary btn-sm" onclick="toggleForm('med-form')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar
+        </button>
+      </div>
+      <div id="med-form" style="display:none" class="form-panel">
+        <div class="form-panel-title">Nuevo medicamento</div>
+        <div class="form-inline">
+          <div class="form-group" style="flex:2"><label>Medicamento / dosis</label><input type="text" id="m-nombre" placeholder="Ej: Enalapril 5mg"></div>
+          <div class="form-group" style="flex:2"><label>Indicación / diagnóstico</label><input type="text" id="m-ind" placeholder="Ej: Protección renal, HTA"></div>
+          <div class="form-group" style="flex:2"><label>Dosis y frecuencia</label><input type="text" id="m-dosis" placeholder="Ej: 1 comp cada 12hs"></div>
+        </div>
+        <div class="form-inline">
+          <div class="form-group"><label>Fecha de inicio</label><input type="date" id="m-desde"></div>
+          <div class="form-group"><label>Fecha de fin (vacío = actual)</label><input type="date" id="m-hasta"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" onclick="addMed()">Guardar</button>
+          <button class="btn btn-sm" onclick="toggleForm('med-form')">Cancelar</button>
+        </div>
+      </div>
+      <div class="card"><div id="med-list"></div></div>
+    </div>
+
+    <!-- ══════ INTERPRETACIÓN ══════ -->
+    <div id="sec-interpretacion" class="section">
+      <div class="sec-header"><div class="sec-title">Interpretación clínica</div></div>
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Perfil del paciente
+        </div>
+        <div class="form-inline" style="margin-bottom:12px">
+          <div class="form-group" style="flex:2">
+            <label>Diagnóstico / enfermedad principal</label>
+            <input type="text" id="diag-principal" placeholder="Ej: Nefropatía IgA, Diabetes tipo 2..." oninput="renderInterpretacion()">
+          </div>
+          <div class="form-group" style="flex:2">
+            <label>Condiciones secundarias</label>
+            <input type="text" id="diag-secundario" placeholder="Ej: Anemia crónica, Dislipemia, HTA..." oninput="renderInterpretacion()">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="renderInterpretacion()" style="margin-bottom:16px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Actualizar interpretación
+        </button>
+        <div id="interpretacion-output"></div>
+      </div>
+    </div>
+
+    <!-- ══════ RECURSOS ══════ -->
+    <div id="sec-recursos" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Recursos especializados</div>
+        <button class="btn btn-primary btn-sm" onclick="toggleForm('link-form')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar enlace
+        </button>
+      </div>
+      <div id="link-form" style="display:none" class="form-panel">
+        <div class="form-panel-title">Nuevo recurso</div>
+        <div class="form-inline">
+          <div class="form-group" style="flex:2"><label>Título</label><input type="text" id="l-titulo" placeholder="Ej: Sociedad Argentina de Nefrología"></div>
+          <div class="form-group" style="flex:3"><label>URL</label><input type="url" id="l-url" placeholder="https://..."></div>
+          <div class="form-group"><label>Categoría</label>
+            <select id="l-cat">
+              <option>Nefrología</option><option>Diabetes</option><option>Cardiología</option>
+              <option>Hematología</option><option>Inmunología</option><option>Nutrición</option><option>Otra</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" onclick="addLink()">Guardar</button>
+          <button class="btn btn-sm" onclick="toggleForm('link-form')">Cancelar</button>
+        </div>
+      </div>
+      <div class="card"><div id="links-list"></div></div>
+    </div>
+
+    <!-- ══════ GLOSARIO ══════ -->
+    <div id="sec-glosario" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Glosario médico</div>
+        <button class="btn btn-primary btn-sm" onclick="toggleForm('glos-form')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo término
+        </button>
+      </div>
+      <div id="glos-form" style="display:none" class="form-panel">
+        <div class="form-panel-title">Agregar término</div>
+        <div class="form-inline">
+          <div class="form-group" style="flex:2"><label>Término</label><input type="text" id="g-term" placeholder="Ej: Creatinina"></div>
+          <div class="form-group" style="flex:2"><label>Categoría</label><input type="text" id="g-cat" placeholder="Ej: Función renal"></div>
+        </div>
+        <div class="form-group"><label>Definición</label><textarea id="g-def" placeholder="Describí el término médico..."></textarea></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" onclick="addGlosario()">Guardar</button>
+          <button class="btn btn-sm" onclick="toggleForm('glos-form')">Cancelar</button>
+        </div>
+      </div>
+      <div class="card">
+        <input type="text" id="glos-search" placeholder="Buscar término..." style="margin-bottom:14px" oninput="renderGlosario()">
+        <div id="glosario-list"></div>
+      </div>
+    </div>
+
+    <!-- ══════ REPORTES ══════ -->
+    <div id="sec-reportes" class="section">
+      <div class="sec-header">
+        <div class="sec-title">Reportes comparativos</div>
+        <button class="btn btn-primary btn-sm no-print" onclick="printReporte()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimir / PDF
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Configurar reporte
+        </div>
+        <div class="form-inline" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Análisis A</label>
+            <select id="rep-a" onchange="renderReporte()"><option value="">Seleccionar...</option></select>
+          </div>
+          <div class="form-group">
+            <label>Análisis B (comparar con A)</label>
+            <select id="rep-b" onchange="renderReporte()"><option value="">Seleccionar...</option></select>
+          </div>
+          <div class="form-group">
+            <label>Período para resumen</label>
+            <select id="rep-rango" onchange="renderReporte()">
+              <option value="">Ninguno</option>
+              <option value="2024">2024</option><option value="2025">2025</option>
+              <option value="2026">2026</option><option value="todos">Todos</option>
+            </select>
+          </div>
+        </div>
+        <div id="print-header" style="display:none;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #d94f72">
+          <div style="font-size:22px;font-family:'DM Serif Display',serif;color:#1a1917">Mis An&#225;lisis &#8212; Reporte cl&#237;nico</div>
+          <div style="font-size:13px;color:#5a5853;margin-top:4px">
+            Paciente: <strong>Pereyra, Omar</strong> &nbsp;&middot;&nbsp; 09/05/1972 &nbsp;&middot;&nbsp; HC 1102632
+            &nbsp;&middot;&nbsp; Generado: <span id="print-date"></span>
+          </div>
+        </div>
+        <div id="reporte-output"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const defaultData = () => ({
+  analyses: [
+    {id:1,fecha:'28/07/2024',medico:'Dr. Molani',especialidad:'Clínica médica',diagnostico:'Hematuria + anemia — estudio inicial',notas:'Internación',hb:11.9,cr:2.04,leu:11.05,ct:null,hdl:null,ldl:null,tg:null,gl:null,fer:null,urea:null},
+    {id:2,fecha:'06/11/2024',medico:'Dr. Martini',especialidad:'Clínica médica',diagnostico:'Control integral — anemia crónica',notas:'',hb:10.9,cr:1.60,leu:12.02,ct:218,hdl:41,ldl:null,tg:134,gl:95,fer:445,urea:null},
+    {id:3,fecha:'07/01/2025',medico:'Dr. Chiurchiu',especialidad:'Nefrología',diagnostico:'Control renal — nefropatía IgA',notas:'',hb:11.7,cr:1.24,leu:10.71,ct:null,hdl:50,ldl:154,tg:150,gl:88,fer:336,urea:46},
+    {id:4,fecha:'01/04/2025',medico:'Dr. Chiurchiu',especialidad:'Nefrología',diagnostico:'Control post tratamiento',notas:'',hb:13.5,cr:1.15,leu:10.02,ct:169,hdl:62,ldl:92,tg:116,gl:87,fer:null,urea:33},
+    {id:5,fecha:'25/08/2025',medico:'Dr. Chiurchiu',especialidad:'Nefrología',diagnostico:'Control semestral',notas:'',hb:14.4,cr:1.27,leu:8.00,ct:177,hdl:50,ldl:108,tg:111,gl:93,fer:null,urea:36},
+    {id:6,fecha:'02/12/2025',medico:'Dr. Chiurchiu',especialidad:'Nefrología',diagnostico:'Control anual',notas:'',hb:14.6,cr:1.34,leu:7.77,ct:144,hdl:38,ldl:87,tg:144,gl:91,fer:null,urea:30},
+    {id:7,fecha:'20/05/2026',medico:'Dr. Chiurchiu',especialidad:'Nefrología',diagnostico:'Control bianual — hematuria + glucosa en orina',notas:'Glucosa +++ en orina, hemoglobina ++ en orina',hb:15.6,cr:1.24,leu:9.32,ct:150,hdl:38,ldl:86,tg:166,gl:92,fer:null,urea:35}
+  ],
+  medications: [
+    {id:1,nombre:'Eritropoyetina (EPO)',indicacion:'Anemia crónica renal',dosis:'Según esquema médico',desde:'01-08-2024',hasta:''},
+    {id:2,nombre:'Hierro oral',indicacion:'Soporte ferremia',dosis:'Variable según control',desde:'01-08-2024',hasta:'2025-04-01'}
+  ],
+  links: [
+    {id:1,titulo:'Sociedad Argentina de Nefrología',url:'https://www.san.org.ar',categoria:'Nefrología'},
+    {id:2,titulo:'Asociación Argentina de Diabetes',url:'https://www.aadyaen.org.ar',categoria:'Diabetes'},
+    {id:3,titulo:'Fundación Cardiológica Argentina',url:'https://www.fca.org.ar',categoria:'Cardiología'},
+    {id:4,titulo:'IgA Nephropathy Foundation (inglés)',url:'https://www.igansupport.org',categoria:'Nefrología'},
+    {id:5,titulo:'Sociedad Argentina de Hematología',url:'https://www.sah.org.ar',categoria:'Hematología'}
+  ],
+  glosario: [
+    {id:1,term:'Creatinina',cat:'Función renal',def:'Producto de desecho del metabolismo muscular excretado por el riñón. Valores elevados indican disminución del filtrado glomerular. En varones adultos el rango normal es 0.60–1.20 mg/dl.'},
+    {id:2,term:'Ferritina',cat:'Metabolismo del hierro',def:'Proteína intracelular que almacena hierro. Valores muy elevados (>250 ng/ml en varones) pueden indicar sobrecarga de hierro, inflamación crónica o enfermedad hepática, además de reservas elevadas.'},
+    {id:3,term:'Hematuria',cat:'Urología / Nefrología',def:'Presencia de glóbulos rojos (hematíes) en orina. Puede ser microscópica (solo visible en laboratorio) o macroscópica. Signo cardinal en nefropatía IgA.'},
+    {id:4,term:'Hemoglobina',cat:'Hematología',def:'Proteína de los eritrocitos que transporta oxígeno. En varones adultos el rango normal es 13.5–17.5 g/dl. Valores menores definen anemia.'},
+    {id:5,term:'Leucocitos',cat:'Hematología',def:'Glóbulos blancos, células del sistema inmunitario. El rango normal es 4.0–10.0 k/ul. Leucocitosis puede indicar infección, inflamación o estrés fisiológico.'},
+    {id:6,term:'Nefropatía IgA (Berger)',cat:'Nefrología',def:'Enfermedad glomerular causada por depósitos de inmunoglobulina A en el mesangio renal. Causa frecuente de hematuria crónica, proteinuria y progresión hacia enfermedad renal crónica.'},
+    {id:7,term:'Complemento C4',cat:'Inmunología',def:'Fracción del sistema del complemento. Valores persistentemente elevados (>37 mg/dl) pueden reflejar activación inmune o patología autoinmune subyacente.'},
+    {id:8,term:'Eritrosedimentación (VSG)',cat:'Inflamación',def:'Velocidad de sedimentación globular. Indicador inespecífico de inflamación. En varones >20 mm/h es elevado.'},
+    {id:9,term:'eGFR / TFGe',cat:'Función renal',def:'Tasa de filtración glomerular estimada, calculada a partir de creatinina, edad y sexo. Permite estadificar la enfermedad renal crónica (ERC) en 5 etapas. <60 ml/min indica ERC establecida.'}
+  ],
+  diagPrincipal: 'Nefropatía IgA',
+  diagSecundario: 'Anemia crónica, Dislipemia'
+});
+
+let DATA = JSON.parse(localStorage.getItem('misAnalisis') || 'null') || defaultData();
+function save() { localStorage.setItem('misAnalisis', JSON.stringify(DATA)); }
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+const sectionTitles = {
+  resumen:'Resumen', historial:'Historial de análisis', graficos:'Gráficos clínicos',
+  medicamentos:'Medicamentos', interpretacion:'Interpretación clínica',
+  recursos:'Recursos especializados', glosario:'Glosario médico', reportes:'Reportes comparativos'
+};
+let chartsInit = {};
+
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('page-title').textContent = sectionTitles[id] || '';
+
+  if (id === 'resumen' && !chartsInit.resumen) { initResumenCharts(); chartsInit.resumen = true; }
+  if (id === 'graficos' && !chartsInit.graficos) { initDetailCharts(); chartsInit.graficos = true; }
+  if (id === 'historial') { renderTable(); populateSpecSelect(); }
+  if (id === 'medicamentos') { renderMeds(); }
+  if (id === 'recursos') { renderLinks(); }
+  if (id === 'glosario') { renderGlosario(); }
+  if (id === 'interpretacion') {
+    document.getElementById('diag-principal').value = DATA.diagPrincipal || '';
+    document.getElementById('diag-secundario').value = DATA.diagSecundario || '';
+    renderInterpretacion();
+  }
+  if (id === 'reportes') { populateReporteSelects(); renderReporte(); }
+}
+
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════
+const DATES_SHORT = ['Jul 24','Nov 24','Ene 25','Abr 25','Ago 25','Dic 25','May 26'];
+const HB   = [11.9,10.9,11.7,13.5,14.4,14.6,15.6];
+const CREAT = [2.04,1.60,1.24,1.15,1.27,1.34,1.24];
+const LEUCO = [11.05,12.02,10.71,10.02,8.00,7.77,9.32];
+const COL_T = [null,218,null,169,177,144,150];
+const HDL   = [null,41,50,62,50,38,38];
+const LDL   = [null,null,154,92,108,87,86];
+const TG    = [null,134,150,116,111,144,166];
+const FERR  = [null,445,336,null,null,null,null];
+const UREA  = [null,null,46,33,36,30,35];
+
+const baseOpts = (yLabel) => ({
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y} ${yLabel||''}`}} },
+  scales:{
+    x:{ticks:{font:{size:10},color:'#9e9b93'},grid:{color:'rgba(0,0,0,.04)'}},
+    y:{ticks:{font:{size:10},color:'#9e9b93'},grid:{color:'rgba(0,0,0,.04)'}}
+  }
+});
+
+function makeRefLine(color, val, n) {
+  return {data:Array(n).fill(val),borderColor:color,borderDash:[4,4],pointRadius:0,borderWidth:1,fill:false};
+}
+
+function initResumenCharts() {
+  const n = DATES_SHORT.length;
+  new Chart(document.getElementById('hbChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:HB,borderColor:'#d94f72',backgroundColor:'rgba(217,79,114,.07)',tension:.35,pointBackgroundColor:'#d94f72',borderWidth:2.5,pointRadius:4},
+      makeRefLine('rgba(26,158,120,.4)',13.5,n), makeRefLine('rgba(26,158,120,.4)',17.5,n)
+    ]},
+    options:baseOpts('g/dl')
+  });
+  new Chart(document.getElementById('creatChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:CREAT,borderColor:'#2f7fc4',backgroundColor:'rgba(47,127,196,.07)',tension:.35,pointBackgroundColor:'#2f7fc4',borderWidth:2.5,pointRadius:4},
+      makeRefLine('rgba(217,79,114,.4)',1.20,n)
+    ]},
+    options:baseOpts('mg/dl')
+  });
+  new Chart(document.getElementById('leucChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:LEUCO,borderColor:'#5a4ab0',backgroundColor:'rgba(90,74,176,.07)',tension:.35,pointBackgroundColor:'#5a4ab0',borderWidth:2.5,pointRadius:4},
+      makeRefLine('rgba(217,79,114,.4)',10,n), makeRefLine('rgba(26,158,120,.4)',4,n)
+    ]},
+    options:baseOpts('k/ul')
+  });
+  new Chart(document.getElementById('lipidChart'), {
+    type:'bar',
+    data:{
+      labels:['Col Total','HDL','LDL','Triglicéridos'],
+      datasets:[{data:[150,38,86,166],backgroundColor:['#2f7fc4','#1a9e78','#d94f72','#c47a15'],borderRadius:5}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}
+  });
+  renderKPIs(); renderAlerts();
+}
+
+function initDetailCharts() {
+  const n = DATES_SHORT.length;
+  new Chart(document.getElementById('hemaChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {label:'Hemoglobina',data:HB,borderColor:'#d94f72',tension:.35,borderWidth:2.5,pointBackgroundColor:'#d94f72',pointRadius:4},
+      {label:'Leucocitos',data:LEUCO,borderColor:'#5a4ab0',tension:.35,borderWidth:2,borderDash:[5,3],pointBackgroundColor:'#5a4ab0',pointRadius:3}
+    ]},
+    options:baseOpts('')
+  });
+  new Chart(document.getElementById('renalChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:CREAT,borderColor:'#2f7fc4',tension:.35,borderWidth:2.5,pointBackgroundColor:'#2f7fc4',pointRadius:4},
+      {data:UREA.map(v=>v!==null?+(v/10).toFixed(2):null),borderColor:'#c47a15',tension:.35,borderWidth:2,borderDash:[5,3],pointBackgroundColor:'#c47a15',pointRadius:3}
+    ]},
+    options:baseOpts('')
+  });
+  new Chart(document.getElementById('lipidFullChart'), {
+    type:'line',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:COL_T,borderColor:'#2f7fc4',tension:.35,borderWidth:2,pointRadius:4,pointBackgroundColor:'#2f7fc4',spanGaps:true},
+      {data:HDL,borderColor:'#1a9e78',tension:.35,borderWidth:2,borderDash:[5,3],pointRadius:3,pointBackgroundColor:'#1a9e78',spanGaps:true},
+      {data:LDL,borderColor:'#d94f72',tension:.35,borderWidth:2,borderDash:[3,3],pointRadius:3,pointBackgroundColor:'#d94f72',spanGaps:true},
+      {data:TG,borderColor:'#c47a15',tension:.35,borderWidth:2,borderDash:[8,3],pointRadius:3,pointBackgroundColor:'#c47a15',spanGaps:true}
+    ]},
+    options:baseOpts('mg/dl')
+  });
+  new Chart(document.getElementById('ferChart'), {
+    type:'bar',
+    data:{labels:DATES_SHORT,datasets:[
+      {data:FERR,backgroundColor:'#c94d28',borderRadius:5},
+      {data:Array(n).fill(250),type:'line',borderColor:'rgba(201,77,40,.3)',borderDash:[4,4],pointRadius:0,borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}
+  });
+  new Chart(document.getElementById('radarChart'), {
+    type:'radar',
+    data:{
+      labels:['Función\nrenal','Hematología','Lípidos','Función\nhepática','Glucemia','Inflamación\nPCR'],
+      datasets:[{
+        label:'Nivel de alteración (%)',
+        data:[20,5,25,5,10,5],
+        backgroundColor:'rgba(217,79,114,.12)',
+        borderColor:'#d94f72',
+        borderWidth:2,
+        pointBackgroundColor:'#d94f72',
+        pointRadius:4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.r}% alterado`}}},
+      scales:{r:{
+        min:0,max:100,
+        ticks:{font:{size:9},stepSize:25,backdropColor:'transparent'},
+        pointLabels:{font:{size:11}},
+        grid:{color:'rgba(0,0,0,.07)'}
+      }}
+    }
+  });
+}
+
+// ══════════════════════════════════════════
+// KPIs & ALERTS
+// ══════════════════════════════════════════
+function renderKPIs() {
+  const a = DATA.analyses[DATA.analyses.length - 1] || {};
+  const prev = DATA.analyses.length > 1 ? DATA.analyses[DATA.analyses.length - 2] : null;
+  const cards = [
+    {label:'Hemoglobina',val:a.hb,unit:'g/dl',prev:prev?.hb,lo:13.5,hi:17.5,dir:'up'},
+    {label:'Creatinina',val:a.cr,unit:'mg/dl',prev:prev?.cr,lo:0.6,hi:1.2,dir:'down'},
+    {label:'Leucocitos',val:a.leu,unit:'k/ul',prev:prev?.leu,lo:4,hi:10,dir:'down'},
+    {label:'Triglicéridos',val:a.tg,unit:'mg/dl',prev:prev?.tg,lo:0,hi:150,dir:'down'},
+    {label:'HDL',val:a.hdl,unit:'mg/dl',prev:prev?.hdl,lo:35,hi:999,dir:'up'},
+    {label:'Glucosa',val:a.gl,unit:'mg/dl',prev:prev?.gl,lo:76,hi:110,dir:'ok'},
+    {label:'LDL',val:a.ldl,unit:'mg/dl',prev:prev?.ldl,lo:0,hi:140,dir:'down'},
+    {label:'Urea',val:a.urea,unit:'mg/dl',prev:prev?.urea,lo:15,hi:50,dir:'down'}
+  ];
+  let st = v=>v===null||v===undefined?'':'';
+  document.getElementById('kpi-grid').innerHTML = cards.map(c => {
+    if (c.val === null || c.val === undefined) return '';
+    const inRange = c.val >= c.lo && c.val <= c.hi;
+    const cls = inRange ? 'ok' : (Math.abs(c.val - (c.val < c.lo ? c.lo : c.hi)) / (c.hi - c.lo) < 0.2 ? 'warn' : 'bad');
+    let trend = '';
+    if (c.prev !== null && c.prev !== undefined) {
+      const d = +(c.val - c.prev).toFixed(2);
+      if (d !== 0) {
+        const good = (c.dir === 'up' && d > 0) || (c.dir === 'down' && d < 0) || c.dir === 'ok';
+        trend = `<div class="metric-trend ${good?'trend-ok':d>0?'trend-up':'trend-down'}">${d>0?'▲':'▼'} ${Math.abs(d)} vs anterior</div>`;
+      }
+    }
+    return `<div class="metric ${cls}"><div class="metric-label">${c.label}</div><div class="metric-val">${c.val}</div><div class="metric-unit">${c.unit}</div>${trend}</div>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  const a = DATA.analyses[DATA.analyses.length - 1] || {};
+  const alerts = [];
+  if (a.cr && a.cr > 1.2) alerts.push({type:'warn',title:'Creatinina levemente elevada',msg:`${a.cr} mg/dl (ref ≤1.20). Seguimiento renal requerido.`});
+  if (a.hb && a.hb < 13.5) alerts.push({type:'bad',title:'Anemia activa',msg:`Hemoglobina ${a.hb} g/dl (ref 13.5–17.5). Requiere seguimiento hematológico.`});
+  if (a.tg && a.tg > 150) alerts.push({type:'warn',title:'Hipertrigliceridemia',msg:`${a.tg} mg/dl (ref <150). Revisar dieta y actividad física.`});
+  if (a.leu && a.leu > 10) alerts.push({type:'warn',title:'Leucocitosis',msg:`${a.leu} k/ul (ref 4–10). Puede indicar inflamación o infección.`});
+  if (a.hdl && a.hdl < 40) alerts.push({type:'warn',title:'HDL bajo',msg:`${a.hdl} mg/dl (ref >35). Riesgo cardiovascular aumentado.`});
+  if (!alerts.length) alerts.push({type:'ok',title:'Sin alertas críticas',msg:'Todos los marcadores evaluados están dentro del rango de referencia en el último análisis.'});
+  document.getElementById('alerts-container').innerHTML = alerts.map(al =>
+    `<div class="alert-item alert-${al.type}">
+      <span class="alert-dot dot-${al.type}"></span>
+      <div class="alert-text"><strong>${al.title}</strong> — ${al.msg}</div>
+    </div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════
+// HISTORIAL TABLE
+// ══════════════════════════════════════════
+function populateSpecSelect() {
+  const specs = [...new Set(DATA.analyses.map(a => a.especialidad).filter(Boolean))];
+  const sel = document.getElementById('f-spec');
+  sel.innerHTML = '<option value="">Todas las especialidades</option>' + specs.map(s=>`<option>${s}</option>`).join('');
+}
+
+function renderTable() {
+  const q = (document.getElementById('f-search')?.value || '').toLowerCase();
+  const yr = document.getElementById('f-year')?.value || '';
+  const sp = document.getElementById('f-spec')?.value || '';
+  const rows = DATA.analyses.filter(a => {
+    return (!q || (a.medico+a.diagnostico+a.especialidad).toLowerCase().includes(q))
+      && (!yr || a.fecha.includes(yr.slice(2)))
+      && (!sp || a.especialidad === sp);
+  });
+  const tag = (v, lo, hi) => {
+    if (v === null || v === undefined) return '<span style="color:#9e9b93">—</span>';
+    const ok = v >= lo && v <= hi;
+    const cls = ok ? 'tag-ok' : (Math.abs(v-(v<lo?lo:hi))/(hi-lo)<.25 ? 'tag-warn':'tag-bad');
+    return `<span class="tag ${cls}">${v}</span>`;
+  };
+  document.getElementById('hist-tbody').innerHTML = rows.length ? rows.map(a =>
+    `<tr>
+      <td><strong>${a.fecha}</strong></td>
+      <td>${a.medico}</td>
+      <td><span class="badge badge-gray">${a.especialidad}</span></td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${a.diagnostico}">${a.diagnostico}</td>
+      <td class="col-num">${tag(a.hb,13.5,17.5)}</td>
+      <td class="col-num">${tag(a.cr,0.6,1.2)}</td>
+      <td class="col-num">${tag(a.leu,4,10)}</td>
+      <td class="col-num">${a.ct||'<span style="color:#9e9b93">—</span>'}</td>
+      <td>
+        <button class="btn btn-icon btn-sm" onclick="deleteAnalysis(${a.id})" title="Eliminar" style="color:#d94f72">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>
+    </tr>`
+  ).join('') : '<tr><td colspan="9" style="text-align:center;color:#9e9b93;padding:24px">Sin resultados</td></tr>';
+}
+
+function addAnalysis() {
+  const a = {
+    id: Date.now(),
+    fecha: document.getElementById('f-fecha').value.split('-').reverse().join('/'),
+    medico: document.getElementById('f-medico').value,
+    especialidad: document.getElementById('f-esp').value,
+    diagnostico: document.getElementById('f-diag').value,
+    notas: document.getElementById('f-notas').value,
+    hb: parseFloat(document.getElementById('v-hb').value) || null,
+    cr: parseFloat(document.getElementById('v-cr').value) || null,
+    leu: parseFloat(document.getElementById('v-leu').value) || null,
+    ct: parseFloat(document.getElementById('v-ct').value) || null,
+    hdl: parseFloat(document.getElementById('v-hdl').value) || null,
+    ldl: parseFloat(document.getElementById('v-ldl').value) || null,
+    tg: parseFloat(document.getElementById('v-tg').value) || null,
+    gl: parseFloat(document.getElementById('v-gl').value) || null,
+    fer: parseFloat(document.getElementById('v-fer').value) || null,
+    urea: parseFloat(document.getElementById('v-urea').value) || null
+  };
+  DATA.analyses.push(a); save();
+  toggleForm('add-form'); renderTable();
+}
+
+function deleteAnalysis(id) {
+  if (!confirm('¿Eliminar este análisis? Esta acción no se puede deshacer.')) return;
+  DATA.analyses = DATA.analyses.filter(a => a.id !== id); save(); renderTable();
+}
+
+// ══════════════════════════════════════════
+// MEDICAMENTOS
+// ══════════════════════════════════════════
+function addMed() {
+  DATA.medications.push({
+    id:Date.now(),
+    nombre:document.getElementById('m-nombre').value,
+    indicacion:document.getElementById('m-ind').value,
+    dosis:document.getElementById('m-dosis').value,
+    desde:document.getElementById('m-desde').value,
+    hasta:document.getElementById('m-hasta').value
+  });
+  save(); toggleForm('med-form'); renderMeds();
+}
+
+function renderMeds() {
+  if (!DATA.medications.length) {
+    document.getElementById('med-list').innerHTML = '<div class="empty">Sin medicamentos registrados.</div>';
+    return;
+  }
+  const now = new Date();
+  document.getElementById('med-list').innerHTML = DATA.medications.map(m => {
+    const active = !m.hasta || new Date(m.hasta) > now;
+    const desde = m.desde ? m.desde.split('-').reverse().join('/') : '—';
+    const hasta = m.hasta ? m.hasta.split('-').reverse().join('/') : 'actualidad';
+    return `<div class="med-item">
+      <div class="med-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.5 20H4a2 2 0 01-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 011.66.9l.82 1.2a2 2 0 001.66.9H20a2 2 0 012 2v3"/><path d="M18 14a4 4 0 100 8 4 4 0 000-8z"/><line x1="18" y1="17" x2="18" y2="17.01"/><line x1="18" y1="15" x2="18" y2="15.01"/></svg>
+        ${m.nombre}
+      </div>
+      <div class="med-info">${m.indicacion} · ${m.dosis}</div>
+      <div class="med-dates">${desde} → ${hasta}</div>
+      <span class="tag ${active?'tag-ok':'tag-gray'}">${active?'Activo':'Finalizado'}</span>
+      <button class="btn btn-icon btn-sm" onclick="deleteMed(${m.id})" style="color:#d94f72">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function deleteMed(id) {
+  DATA.medications = DATA.medications.filter(m => m.id !== id); save(); renderMeds();
+}
+
+// ══════════════════════════════════════════
+// INTERPRETACIÓN
+// ══════════════════════════════════════════
+function renderInterpretacion() {
+  const dp = document.getElementById('diag-principal').value || '';
+  const ds = document.getElementById('diag-secundario').value || '';
+  DATA.diagPrincipal = dp; DATA.diagSecundario = ds; save();
+  const a = DATA.analyses[DATA.analyses.length - 1] || {};
+
+  const isNefro = dp.toLowerCase().includes('nefro') || dp.toLowerCase().includes('iga');
+  const isAnemia = dp.toLowerCase().includes('anemia') || ds.toLowerCase().includes('anemia');
+  const isDiab = dp.toLowerCase().includes('diab') || ds.toLowerCase().includes('diab');
+  const isDislip = ds.toLowerCase().includes('dislip') || ds.toLowerCase().includes('lipid');
+
+  const comments = [];
+
+  if (a.hb !== null) {
+    if (a.hb >= 13.5) {
+      comments.push({cls:'ok', text:`<strong>Hemoglobina ${a.hb} g/dl — normal.</strong> Recuperación notable desde el mínimo de 10.9 g/dl (nov 2024). La normalización progresiva sugiere respuesta positiva al tratamiento${isAnemia?' eritropoyético':''}.`});
+    } else {
+      comments.push({cls:'bad', text:`<strong>Hemoglobina ${a.hb} g/dl — anemia.</strong> ${isNefro?'En nefropatía crónica la anemia es frecuente por déficit relativo de eritropoyetina renal.':'La anemia requiere evaluación de su causa.'} Controlar también ferritina y vitamina B12.`});
+    }
+  }
+
+  if (a.cr !== null) {
+    if (a.cr <= 1.2) {
+      comments.push({cls:'ok', text:`<strong>Creatinina ${a.cr} mg/dl — dentro de rango.</strong> Excelente evolución respecto al pico de 2.04 mg/dl (jul 2024). ${isNefro?'La función renal se mantiene preservada en el seguimiento actual. Continuar monitoreo regular del eGFR.':''}`});
+    } else {
+      comments.push({cls:'warn', text:`<strong>Creatinina ${a.cr} mg/dl — levemente elevada.</strong> Por encima del límite superior (1.20 mg/dl). ${isNefro?'En el contexto de nefropatía IgA, este valor requiere seguimiento del filtrado glomerular estimado (eGFR). La tendencia muestra mejoría significativa respecto al diagnóstico inicial.':'Consultar con el médico tratante.'}`});
+    }
+  }
+
+  if (a.tg !== null && a.tg > 150) {
+    comments.push({cls:'warn', text:`<strong>Triglicéridos ${a.tg} mg/dl — elevados.</strong> Superan el límite de 150 mg/dl. La hipertrigliceridemia aumenta el riesgo cardiovascular${isNefro?', especialmente relevante en pacientes renales':''}.`});
+  } else if (a.tg !== null) {
+    comments.push({cls:'ok', text:`<strong>Triglicéridos ${a.tg} mg/dl — dentro de rango.</strong> Perfil lipídico en mejoría respecto a valores anteriores.`});
+  }
+
+  if (a.hdl !== null && a.hdl < 40) {
+    comments.push({cls:'warn', text:`<strong>HDL ${a.hdl} mg/dl — bajo.</strong> El colesterol "bueno" se encuentra en el límite inferior. Combinado con triglicéridos elevados configura un perfil de riesgo aterogénico mixto. Se recomienda actividad física regular y revisión dietética.`});
+  }
+
+  if (a.leu !== null && a.leu > 10) {
+    comments.push({cls:'warn', text:`<strong>Leucocitos ${a.leu} k/ul — leucocitosis leve.</strong> Puede indicar inflamación activa o respuesta al estrés fisiológico. Controlar en próximo análisis.`});
+  }
+
+  const suggestions = [];
+  if (isNefro || isAnemia) {
+    suggestions.push('Hidratación abundante: 2–2.5 litros de agua por día para proteger la función renal.');
+    suggestions.push('Reducir el consumo de sodio por debajo de 5 g/día para controlar la presión arterial y proteger los riñones.');
+    suggestions.push('Proteínas en cantidad moderada: 0.8–1 g/kg/día según indicación nefrológica.');
+    suggestions.push('Controlar regularmente la presión arterial. Meta recomendada en nefropatía: ≤130/80 mmHg.');
+  }
+  if (a.tg > 150 || isDislip) {
+    suggestions.push('Reducir carbohidratos simples, azúcares refinados y bebidas azucaradas para normalizar los triglicéridos.');
+    suggestions.push('Incorporar ácidos grasos omega-3: salmón, sardinas, nueces, semillas de lino.');
+    suggestions.push('Evitar el consumo de alcohol.');
+  }
+  suggestions.push('Actividad física aeróbica moderada: 30 minutos de caminata, 5 veces por semana.');
+  suggestions.push('Mantener el peso corporal en rango saludable (IMC 18.5–24.9).');
+  if (isDiab) {
+    suggestions.push('Control glucémico estricto: glucosa en ayunas 76–110 mg/dl. Hemoglobina glicosilada (HbA1c) objetivo <7%.');
+    suggestions.push('Reducir ultraprocesados y azúcares simples. Priorizar vegetales, legumbres y cereales integrales.');
+  }
+  suggestions.push('Respetar los horarios de los controles analíticos indicados por el médico tratante.');
+
+  const out = document.getElementById('interpretacion-output');
+  out.innerHTML = `
+    <div style="font-size:13px;color:#5a5853;margin-bottom:14px;padding:10px 14px;background:var(--gray);border-radius:var(--radius)">
+      <strong>Diagnóstico base:</strong> ${dp||'—'} ${ds?'· <em>'+ds+'</em>':''}
+      <span style="margin-left:12px;font-size:11px;color:#9e9b93">Último análisis: ${DATA.analyses[DATA.analyses.length-1]?.fecha||'—'}</span>
+    </div>
+    ${comments.map(c=>`<div class="interp-block interp-${c.cls}">${c.text}</div>`).join('')}
+    <div class="suggest-block" style="margin-top:14px">
+      <strong>Sugerencias de alimentación y estilo de vida:</strong>
+      <ul>${suggestions.map(s=>`<li>${s}</li>`).join('')}</ul>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// RECURSOS
+// ══════════════════════════════════════════
+const catColor = {'Nefrología':'badge-rose','Diabetes':'badge-amber','Cardiología':'badge-teal','Hematología':'badge-blue','Inmunología':'badge-blue','Nutrición':'badge-teal','Otra':'badge-gray'};
+
+function addLink() {
+  DATA.links.push({id:Date.now(),titulo:document.getElementById('l-titulo').value,url:document.getElementById('l-url').value,categoria:document.getElementById('l-cat').value});
+  save(); toggleForm('link-form'); renderLinks();
+}
+
+function renderLinks() {
+  if (!DATA.links.length) { document.getElementById('links-list').innerHTML='<div class="empty">Sin recursos registrados.</div>'; return; }
+  document.getElementById('links-list').innerHTML = DATA.links.map(l=>`
+    <div class="link-item">
+      <div class="link-icon" style="background:var(--rose-light)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d94f72" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div class="link-body">
+        <div class="link-title">${l.titulo}</div>
+        <div class="link-url">${l.url}</div>
+      </div>
+      <span class="badge ${catColor[l.categoria]||'badge-gray'}">${l.categoria}</span>
+      <a href="${l.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Abrir
+      </a>
+      <button class="btn btn-icon btn-sm" onclick="deleteLink(${l.id})" style="color:#d94f72">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function deleteLink(id) { DATA.links=DATA.links.filter(l=>l.id!==id); save(); renderLinks(); }
+
+// ══════════════════════════════════════════
+// GLOSARIO
+// ══════════════════════════════════════════
+function addGlosario() {
+  DATA.glosario.push({id:Date.now(),term:document.getElementById('g-term').value,cat:document.getElementById('g-cat').value,def:document.getElementById('g-def').value});
+  save(); toggleForm('glos-form'); renderGlosario();
+}
+
+function renderGlosario() {
+  const q = (document.getElementById('glos-search')?.value||'').toLowerCase();
+  const items = DATA.glosario.filter(g=>!q||g.term.toLowerCase().includes(q)||g.def.toLowerCase().includes(q)||g.cat.toLowerCase().includes(q)).sort((a,b)=>a.term.localeCompare(b.term));
+  document.getElementById('glosario-list').innerHTML = items.length ? items.map(g=>`
+    <div class="glos-entry">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><span class="glos-term">${g.term}</span><span class="glos-cat">${g.cat}</span></div>
+        <button class="btn btn-icon btn-sm" onclick="deleteGlos(${g.id})" style="color:#d94f72">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+      <div class="glos-def">${g.def}</div>
+    </div>`).join('') : '<div class="empty">Sin términos encontrados.</div>';
+}
+
+function deleteGlos(id) { DATA.glosario=DATA.glosario.filter(g=>g.id!==id); save(); renderGlosario(); }
+
+// ══════════════════════════════════════════
+// REPORTES
+// ══════════════════════════════════════════
+function populateReporteSelects() {
+  const opts = DATA.analyses.map(a=>`<option value="${a.id}">${a.fecha} — ${a.medico} (${a.especialidad})</option>`).join('');
+  ['rep-a','rep-b'].forEach(id=>{ document.getElementById(id).innerHTML='<option value="">Seleccionar...</option>'+opts; });
+}
+
+function renderReporte() {
+  const idA = parseInt(document.getElementById('rep-a').value);
+  const idB = parseInt(document.getElementById('rep-b').value);
+  const rango = document.getElementById('rep-rango').value;
+  let html = '';
+
+  if (idA && idB && idA !== idB) {
+    const a = DATA.analyses.find(x=>x.id===idA);
+    const b = DATA.analyses.find(x=>x.id===idB);
+    const campos = [
+      ['Hemoglobina (g/dl)','hb',13.5,17.5],
+      ['Creatinina (mg/dl)','cr',0.6,1.2],
+      ['Leucocitos (k/ul)','leu',4,10],
+      ['Colesterol total (mg/dl)','ct',0,200],
+      ['HDL (mg/dl)','hdl',35,999],
+      ['LDL (mg/dl)','ldl',0,140],
+      ['Triglicéridos (mg/dl)','tg',0,150],
+      ['Glucosa (mg/dl)','gl',76,110],
+      ['Urea (mg/dl)','urea',15,50],
+      ['Ferritina (ng/ml)','fer',15,250]
+    ];
+    html += `<div class="rep-title">Comparativo: ${a.fecha} vs ${b.fecha}</div>
+    <div class="rep-meta">${a.medico} (${a.especialidad}) · ${a.diagnostico} &nbsp;→&nbsp; ${b.medico} (${b.especialidad}) · ${b.diagnostico}</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Parámetro</th><th>${a.fecha}</th><th>${b.fecha}</th><th>Variación</th><th>Estado en B</th></tr></thead>
+      <tbody>
+      ${campos.map(([label,key,lo,hi])=>{
+        const va=a[key], vb=b[key];
+        if(va===null&&vb===null) return '';
+        const d = va!==null&&vb!==null ? +(vb-va).toFixed(2) : null;
+        const dir = d===null?'—': d>0?`<span class="delta-up">▲ +${d}</span>`:(d<0?`<span class="delta-down">▼ ${d}</span>`:'<span class="delta-eq">= Sin cambio</span>');
+        const stb = vb!==null?(vb>=lo&&vb<=hi?'tag-ok':(Math.abs(vb-(vb<lo?lo:hi))/(hi-lo)<.25?'tag-warn':'tag-bad')):'tag-gray';
+        return `<tr><td>${label}</td><td>${va??'<span style="color:#9e9b93">—</span>'}</td><td>${vb??'<span style="color:#9e9b93">—</span>'}</td><td>${dir}</td><td>${vb!==null?`<span class="tag ${stb}">${vb}</span>`:'—'}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  if (rango) {
+    const filtered = DATA.analyses.filter(a=>rango==='todos'||a.fecha.includes(rango.slice(2)));
+    if (filtered.length) {
+      html += `<div class="rep-title">Resumen período: ${rango==='todos'?'Historial completo':rango}</div>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Médico</th><th>Especialidad</th><th>Diagnóstico</th><th>Hb</th><th>Creat.</th><th>Leuco.</th><th>TG</th><th>HDL</th></tr></thead>
+        <tbody>
+        ${filtered.map(a=>`<tr>
+          <td><strong>${a.fecha}</strong></td><td>${a.medico}</td><td>${a.especialidad}</td>
+          <td>${a.diagnostico}</td><td>${a.hb??'—'}</td><td>${a.cr??'—'}</td>
+          <td>${a.leu??'—'}</td><td>${a.tg??'—'}</td><td>${a.hdl??'—'}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    }
+  }
+
+  document.getElementById('reporte-output').innerHTML = html ||
+    '<div class="empty">Seleccioná dos análisis para comparar, o un período para ver el resumen.</div>';
+}
+
+// ══════════════════════════════════════════
+// PRINT
+// ══════════════════════════════════════════
+function printReporte() {
+  // Make sure reporte is rendered
+  renderReporte();
+  // Set today's date in the print header
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('print-date').textContent = dateStr;
+  window.print();
+}
+
+// ══════════════════════════════════════════
+// IMPORT / EXPORT
+// ══════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'MisAnalisis_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importData(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      DATA = JSON.parse(e.target.result); save();
+      alert('Datos importados correctamente. Recargando...');
+      location.reload();
+    } catch { alert('Error al leer el archivo. Asegurate de que sea un JSON válido exportado desde este dashboard.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initResumenCharts();
+  chartsInit.resumen = true;
+});
+</script>
+</body>
+</html>
